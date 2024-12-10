@@ -1,8 +1,9 @@
 {
+  "deps": [],
   "description": "Generate minimalist thumbnails for all my projects.",
   "image": "",
-  "repo": "mattborn/",
+  "repo": "mattborn/thumby",
   "tags": ["Micro", "OSS", "Snooze"],
-  "title": "Thumby 🟡",
+  "title": "Thumby 🟢",
   "urls": ["thumby.net"]
 }

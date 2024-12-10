@@ -5,7 +5,6 @@ const ctx = canvas.getContext('2d')
 const input = document.getElementById('seed')
 const grainToggle = document.getElementById('grain-toggle')
 
-// Set 4:3 aspect ratio
 canvas.width = 400
 canvas.height = 300
 
@@ -33,47 +32,74 @@ function generateColors(hash) {
   }
 }
 
-// Add subtle random dither to prevent banding
-function dither(value) {
-  const floorValue = Math.floor(value)
-  const remainder = value - floorValue
-  return Math.random() > remainder ? floorValue : Math.ceil(value)
+//github.com/jwagner/analog-film-emulator/blob/master/src/image-processing.js
+function addGrain(out, image, slice, scale, intensity) {
+  let noise2D = createNoise2D()
+  // console.time('addGrain')
+  let od = out.data,
+    id = image.data,
+    w = image.width,
+    h = image.height,
+    ox = slice.x,
+    oy = slice.y,
+    d = Math.min(slice.width, slice.height)
+
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      // reduce noise in shadows and highlights, 4 = no noise in pure black and white
+      let i = (y * w + x) * 4,
+        l = (id[i] + id[i + 1] + id[i + 2]) / 768 - 0.5,
+        rx = x + ox,
+        ry = y + oy,
+        noise =
+          (noise2D((rx / d) * scale, (ry / d) * scale) +
+            noise2D(((rx / d) * scale) / 2, ((ry / d) * scale) / 2) * 0.25 +
+            noise2D(((rx / d) * scale) / 4, ((ry / d) * scale) / 4)) *
+          0.5
+      // reduce noise in shadows and highlights, 4 = no noise in pure black and white
+      noise *= 1 - l * l * 2
+      noise *= intensity * 255
+      od[i] = id[i] + noise
+      od[i + 1] = id[i + 1] + noise
+      od[i + 2] = id[i + 2] + noise
+    }
+  }
+  // console.timeEnd('addGrain')
 }
 
 function generateImage(seed) {
   const hash = hashString(seed)
-  const noise2D = createNoise2D(() => hash / Number.MAX_SAFE_INTEGER)
   const imageData = ctx.createImageData(canvas.width, canvas.height)
   const { color1, color2 } = generateColors(hash)
 
-  // Film grain parameters
-  const grainIntensity = grainToggle.checked ? 0.1 : 0
-  const d = Math.min(canvas.width, canvas.height)
-  const baseScale = 8
-  const timeOffset = hash % 1000
-
+  // Create base gradient
   for (let y = 0; y < canvas.height; y++) {
     for (let x = 0; x < canvas.width; x++) {
-      // Create diagonal gradient
       const gradientPos = (x + y) / (canvas.width + canvas.height)
-
-      // Create film grain effect with finer detail
-      const grain =
-        (noise2D(((x + timeOffset) / d) * baseScale, ((y + timeOffset) / d) * baseScale) + // Base grain
-          noise2D(((x - timeOffset) / d) * baseScale * 2, ((y - timeOffset) / d) * baseScale * 2) * 0.5 + // Medium detail
-          noise2D((x / d) * baseScale * 4, (y / d) * baseScale * 4) * 0.25) * // Fine detail
-        grainIntensity *
-        0.75 // Reduce overall intensity slightly
-
-      // Blend colors with gradient and add grain
-      const blend = Math.max(0, Math.min(1, gradientPos + grain))
       const i = (y * canvas.width + x) * 4
 
-      imageData.data[i] = color1.r + (color2.r - color1.r) * blend // R
-      imageData.data[i + 1] = color1.g + (color2.g - color1.g) * blend // G
-      imageData.data[i + 2] = color1.b + (color2.b - color1.b) * blend // B
-      imageData.data[i + 3] = 255 // A
+      imageData.data[i] = color1.r + (color2.r - color1.r) * gradientPos
+      imageData.data[i + 1] = color1.g + (color2.g - color1.g) * gradientPos
+      imageData.data[i + 2] = color1.b + (color2.b - color1.b) * gradientPos
+      imageData.data[i + 3] = 255
     }
+  }
+
+  // Add grain if enabled
+  if (grainToggle.checked) {
+    // Call original addGrain with correct parameters
+    addGrain(
+      imageData, // out
+      imageData, // image (same as out in our case)
+      {
+        x: 0,
+        y: 0,
+        width: canvas.width,
+        height: canvas.height,
+      }, // slice
+      1600, // scale
+      0.1, // intensity
+    )
   }
 
   ctx.putImageData(imageData, 0, 0)
