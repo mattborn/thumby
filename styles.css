@@ -7,11 +7,17 @@ body {
 }
 
 canvas {
-  border: 1px solid #ccc;
+  border-radius: 1rem;
 }
 
-input {
+input[type='text'] {
   font: inherit;
   padding: 0.5rem;
   width: 300px;
+}
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
