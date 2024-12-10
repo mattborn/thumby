@@ -1,0 +1,1 @@
+create a vanilla HTML project in /thumby with index.html, scripts.js, and styles.css that uses simplex-noise.js to generate a 4:3 aspect ratio image based on a string and it uses a deterministic method so the image is always the same for the same string, keep the code as minimal as possible

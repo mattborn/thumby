@@ -1,0 +1,17 @@
+body {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 2rem;
+}
+
+canvas {
+  border: 1px solid #ccc;
+}
+
+input {
+  font: inherit;
+  padding: 0.5rem;
+  width: 300px;
+}
